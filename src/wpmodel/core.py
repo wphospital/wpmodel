@@ -15,8 +15,7 @@ import numpy as np
 import hashlib
 import yaml
     
-with open('strings.yml', 'rb') as file:
-    strings = yaml.load(file, Loader=yaml.FullLoader)
+from . import strings
 
 formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
 
@@ -105,7 +104,7 @@ class WPModel(ABC):
     
     def __init__(
         self,
-        model_name : str = strings['default_model_name'],
+        model_name : str = strings.DEFAULT_MODEL_NAME,
         **kwargs
     ):
         self.model_name = model_name
@@ -253,7 +252,7 @@ class WPModel(ABC):
             query_list = self.query_list
             
         if len(query_list) == 0:
-            raise Exception(strings['errors']['no_data_dict'])
+            raise Exception(strings.errors.NO_DATA_DICT)
         
         for q in query_list:
             key = self._get_query_key_name(q['query_fn'])

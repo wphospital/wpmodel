@@ -3,7 +3,9 @@ requires = [
 	'hatchling',
 	'pandas',
 	'numpy',
-	'pyyaml'
+	'pyyaml',
+	'wpconnect @ git+https://github.com/wphospital/wpconnect',
+	'sprucepy @ git+https://github.com/wphospital/sprucepy'
 ]
 build-backend = 'hatchling.build'
 

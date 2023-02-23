@@ -1,4 +1,0 @@
-errors:
-    no_data_dict: No queries defined, can not populate the data dict! Either pass a query list here or set the class query list first!
-
-default_model_name: WPH Model
