@@ -16,6 +16,7 @@ import hashlib
 import yaml
     
 from . import strings
+from . import constants
 
 formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
 
@@ -124,17 +125,10 @@ class WPModel(ABC):
         self.data_dict = {}
         
     def __repr__(self):
-        if self.fitted_time:
-            time_component = self.fitted_time
-            fitted_status = 'Fitted'
-        else:
-            time_component = self.created_time
-            fitted_status = 'Created'
-        
-        return '<{} {} {}>'.format(
+        return '<{} {} {:%Y-%m-%d %H:%M:%S}>'.format(
             self.model_name,
-            fitted_status,
-            time_component.strftime('%Y-%m-%d %H:%M:%S')
+            'Created',
+            self.created_time
         )
 
     def _set_id(self):
@@ -221,7 +215,7 @@ class WPModel(ABC):
         
         wpapi_password = secrets.get_secret_by_key(
             'wpconnect_redis_password',
-            api_url=cfg['spruce_api']
+            api_url=constants.SPRUCE_API_URL
         )
         
         req = WPAPIRequest(wpapi_password)

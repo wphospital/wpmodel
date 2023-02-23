@@ -5,3 +5,5 @@ env/*
 *.pyc
 *.pkl
 *.pq
+*.log
+
