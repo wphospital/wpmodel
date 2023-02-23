@@ -228,6 +228,7 @@ class WPModel(ABC):
         
         return res.get_data() if res.status_code == 200 else res
     
+    @log
     def get_data(
         self,
         query_list : list = None
