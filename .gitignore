@@ -1,0 +1,7 @@
+*.csv
+*.xlsx
+*.ipynb
+env/*
+*.pyc
+*.pkl
+*.pq
