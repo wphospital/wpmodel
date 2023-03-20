@@ -229,7 +229,7 @@ class WPModel(ABC):
         return res.get_data() if res.status_code == 200 else res
     
     @log
-    def get_data(
+    def load_data(
         self,
         query_list : list = None
     ):
@@ -254,6 +254,32 @@ class WPModel(ABC):
 
             self.data_dict[key] = self._get_wpapi_data(**q)
             
+    @log
+    def get_data(
+        self,
+        data_name : str
+    ):
+        """Gets data from the dictionary. Loads if not defined
+
+        Parameters
+        ----------
+        data_name : str
+            a string with the key for the data to retrieve from data_dict
+
+        Returns
+        -------
+        pandas.DataFrame
+            a dataframe with the selected data
+        """
+
+        if len(self.data_dict) == 0:
+            self.load_data()
+
+        try:
+            return self.data_dict[data_name]
+        except KeyError as err:
+            raise Exception(strings.errors.NO_DATA_DEFINED)
+
     @abstractmethod
     def preprocess(self):
         pass
