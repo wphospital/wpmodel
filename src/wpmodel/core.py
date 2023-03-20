@@ -280,6 +280,24 @@ class WPModel(ABC):
         except KeyError as err:
             raise Exception(strings.errors.NO_DATA_DEFINED)
 
+    @log
+    def set_target(
+        self,
+        data_name : str,
+        target_col : str
+    ):
+        """Set the target dataframe and column
+
+        Parameters
+        ----------
+        data_name : str
+            a string with the key for the data to retrieve from data_dict
+        target_col : str
+            a string with the column in data_name to use as target
+        """
+
+        self.target = data_name, target_col
+
     @abstractmethod
     def preprocess(self):
         pass
