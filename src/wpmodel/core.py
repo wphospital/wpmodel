@@ -177,7 +177,7 @@ class WPModel:
         """
 
         save_name = '{}_{}.pkl'.format(
-            self.model_name.lower().replace(' ', '_'),
+            self.model_name,
             self.created_time.strftime('%Y%m%d%H%M%S')
         )
 
