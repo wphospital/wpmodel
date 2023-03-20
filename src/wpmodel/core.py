@@ -14,7 +14,7 @@ import numpy as np
 
 import hashlib
 import yaml
-import pickle
+import dill
 import os
     
 from . import strings
@@ -168,7 +168,7 @@ class WPModel(ABC):
         self,
         filepath : str
     ):
-        """Dump the whole shebang as a pickle to the filepath
+        """Dump the whole shebang as a dill to the filepath
 
         Parameters
         ----------
@@ -182,7 +182,7 @@ class WPModel(ABC):
         )
 
         with open(os.path.join(filepath, save_name), 'wb') as file: # TODO: Recursively make sure filepath exists
-            pickle.dump(self, file)
+            dill.dump(self, file)
     
     def set_query_list(
         self,
