@@ -349,7 +349,6 @@ class WPModel:
 
     @staticmethod
     def _check_query_list(
-        self,
         query_list : list
     ):
         """Checks the query list for any non-precached queries and issues
