@@ -1,5 +1,5 @@
 # from abc import ABC, abstractmethod
-from wpconnect.wpapi import WPAPIRequest
+from wpconnect.wpapi import WPAPIRequest, get_precache_list
 from sprucepy import secrets
 
 import logging
@@ -16,6 +16,8 @@ import hashlib
 import yaml
 import dill
 import os
+import json
+import warnings
     
 from . import strings
 from . import constants
@@ -113,8 +115,10 @@ class WPModel:
         more human-readable dictionary key
     _get_wpapi_data(query_fn : str, **kwargs)
         uses the WPAPI interface to retrieve data
-    get_data(query_list : list = None)
+    load_data(query_list : list = None)
         gets data as defined in the query_list
+    get_data(data_name, query_string)
+        gets data from the data dictionary
 
     """
     
@@ -283,6 +287,8 @@ class WPModel:
             
         if len(query_list) == 0:
             raise Exception(strings.errors.NO_DATA_DICT)
+
+        self._check_query_list(query_list)
         
         for q in query_list:
             key = self._get_query_key_name(q['query_fn'])
@@ -340,3 +346,47 @@ class WPModel:
         """
 
         self.target = data_name, target_col
+
+    @staticmethod
+    def _check_query_list(
+        self,
+        query_list : list
+    ):
+        """Checks the query list for any non-precached queries and issues
+        warnings about slowness if any are found
+        
+        Parameters
+        ----------
+        query_list : list
+            a list of dictionaries with key-value pairs suitable for
+            passing to wpconnect WPAPIRequest class
+        """
+
+        pc = get_precache_list()
+
+        for q in query_list:
+            qfn = q['query_fn']
+            environ = q.get('environ', 'qa')
+
+            relpc = pc.query('query_fn == @qfn & environ == @environ')
+
+            if relpc.index.size == 0:
+                warnings.warn(strings.errors.DATA_NOT_CACHED)
+            else:
+                check_params = sorted(
+                    pair for pair in q['query_params'].items()
+                )
+
+                match = False
+                for _, r in relpc.iterrows():
+                    pc_params = sorted(
+                        pair for pair in json.loads(r['params']).items()
+                    )
+
+                    match = pc_params == check_params
+
+                    if match:
+                        break
+
+                if not match:
+                    warnings.warn(strings.errors.DATA_NOT_CACHED)

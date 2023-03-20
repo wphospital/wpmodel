@@ -5,5 +5,8 @@ class errors:
 	NO_DATA_DEFINED = '''This key has not been registered in the
 	data dictionary
 	'''
+	DATA_NOT_CACHED = '''Some query list entries are not in the precache list.
+	Data retrieval may be slow
+	'''
 
 DEFAULT_MODEL_NAME = 'WPH Model'
