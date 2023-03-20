@@ -177,8 +177,8 @@ class WPModel(ABC):
         """
 
         save_name = '{}_{}.pkl'.format(
-            inp.model_name.lower().replace(' ', '_'),
-            inp.created_time.strftime('%Y%m%d%H%M%S')
+            self.model_name.lower().replace(' ', '_'),
+            self.created_time.strftime('%Y%m%d%H%M%S')
         )
 
         with open(os.path.join(filepath, save_name), 'wb') as file: # TODO: Recursively make sure filepath exists
