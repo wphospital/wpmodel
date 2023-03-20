@@ -56,6 +56,19 @@ def log(func):
 
     return wrapper
 
+def fit(func):
+    """Decorator for standard fitting ops
+    """
+    @log
+    def fit(self, *args, **kwargs):
+        result = func(self, *args, **kwargs)
+
+        self.fitted_time = dt.datetime.now(tz=pytz.utc)
+
+        return result
+
+    return fit
+
 class WPModel:
     """
     A parent class for standardized model management at WPH.
