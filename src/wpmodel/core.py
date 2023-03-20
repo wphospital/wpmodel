@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+# from abc import ABC, abstractmethod
 from wpconnect.wpapi import WPAPIRequest
 from sprucepy import secrets
 
@@ -56,7 +56,7 @@ def log(func):
 
     return wrapper
 
-class WPModel(ABC):
+class WPModel:
     """
     A parent class for standardized model management at WPH.
     Designed for future model development to be created as a subclass
@@ -327,15 +327,3 @@ class WPModel(ABC):
         """
 
         self.target = data_name, target_col
-
-    @abstractmethod
-    def preprocess(self):
-        pass
-    
-    @abstractmethod
-    def fit(self):
-        pass
-    
-    @abstractmethod
-    def predict(self):
-        pass
