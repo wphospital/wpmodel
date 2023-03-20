@@ -15,6 +15,7 @@ import numpy as np
 import hashlib
 import yaml
 import pickle
+import os
     
 from . import strings
 from . import constants
@@ -172,10 +173,15 @@ class WPModel(ABC):
         Parameters
         ----------
         filepath : str
-            the path to save the model to
+            the path to save the model to (the directory path, not filename)
         """
 
-        with open(filepath, 'wb') as file:
+        save_name = '{}_{}.pkl'.format(
+            inp.model_name.lower().replace(' ', '_'),
+            inp.created_time.strftime('%Y%m%d%H%M%S')
+        )
+
+        with open(os.path.join(filepath, save_name), 'wb') as file: # TODO: Recursively make sure filepath exists
             pickle.dump(self, file)
     
     def set_query_list(
