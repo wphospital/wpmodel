@@ -257,7 +257,8 @@ class WPModel(ABC):
     @log
     def get_data(
         self,
-        data_name : str
+        data_name : str,
+        query_string : str = None
     ):
         """Gets data from the dictionary. Loads if not defined
 
@@ -265,6 +266,8 @@ class WPModel(ABC):
         ----------
         data_name : str
             a string with the key for the data to retrieve from data_dict
+        query_string : str
+            optional Pandas query string to get a subset of data
 
         Returns
         -------
@@ -276,7 +279,12 @@ class WPModel(ABC):
             self.load_data()
 
         try:
-            return self.data_dict[data_name]
+            if query_string:
+                return self.data_dict[data_name]\
+                    .copy()\
+                    .query(query_string)
+            else:
+                return self.data_dict[data_name]
         except KeyError as err:
             raise Exception(strings.errors.NO_DATA_DEFINED)
 
