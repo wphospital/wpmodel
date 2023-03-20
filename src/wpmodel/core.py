@@ -14,6 +14,7 @@ import numpy as np
 
 import hashlib
 import yaml
+import pickle
     
 from . import strings
 from . import constants
@@ -161,6 +162,21 @@ class WPModel(ABC):
             fh.setLevel(logging.INFO)
             fh.setFormatter(formatter)
             logger.addHandler(fh)
+
+    def save(
+        self,
+        filepath : str
+    ):
+        """Dump the whole shebang as a pickle to the filepath
+
+        Parameters
+        ----------
+        filepath : str
+            the path to save the model to
+        """
+
+        with open(filepath, 'wb') as file:
+            pickle.dump(self, file)
     
     def set_query_list(
         self,
