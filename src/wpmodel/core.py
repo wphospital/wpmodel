@@ -183,7 +183,8 @@ class WPModel:
 
     def save(
         self,
-        filepath : str
+        filepath : str,
+        clear_data : bool = True
     ):
         """Dump the whole shebang as a dill to the filepath
 
@@ -191,12 +192,18 @@ class WPModel:
         ----------
         filepath : str
             the path to save the model to (the directory path, not filename)
+        clear_data : bool
+            boolean indicating whether data should be cleared before save
+            defaults to true
         """
 
         save_name = '{}_{}.pkl'.format(
             self.model_name,
             self.created_time.strftime('%Y%m%d%H%M%S')
         )
+
+        if clear_data:
+            self.clear_data()
 
         with open(os.path.join(filepath, save_name), 'wb') as file: # TODO: Recursively make sure filepath exists
             dill.dump(self, file)
@@ -294,6 +301,15 @@ class WPModel:
             key = self._get_query_key_name(q['query_fn'])
 
             self.data_dict[key] = self._get_wpapi_data(**q)
+
+    @log
+    def clear_data(
+        self
+    ):
+        """Clears data from the data_dict
+        """
+
+        self.data_dict = {}
             
     @log
     def get_data(
