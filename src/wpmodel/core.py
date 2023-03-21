@@ -65,6 +65,7 @@ def fit(func):
     def fit(self, *args, **kwargs):
         result = func(self, *args, **kwargs)
 
+        self.model = result
         self.fitted_time = dt.datetime.now(tz=pytz.utc)
 
         return result
