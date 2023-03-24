@@ -184,7 +184,7 @@ class WPModel:
 
     def save(
         self,
-        filepath : str,
+        filepath : str = 'out',
         clear_data : bool = True
     ):
         """Dump the whole shebang as a dill to the filepath
