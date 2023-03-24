@@ -10,3 +10,7 @@ class errors:
 	'''
 
 DEFAULT_MODEL_NAME = 'WPH Model'
+
+MAGIC_DATA = dict(
+	WEATHER_QUERY_KEY='weather'
+)

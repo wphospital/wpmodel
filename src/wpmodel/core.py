@@ -264,8 +264,13 @@ class WPModel:
             'wpconnect_redis_password',
             api_url=constants.SPRUCE_API_URL
         )
+
+        if query_fn == strings.MAGIC_DATA['WEATHER_QUERY_KEY']:
+            endpoint = 'get_weather'
+        else:
+            endpoint = 'repo_query'
         
-        req = WPAPIRequest(wpapi_password)
+        req = WPAPIRequest(wpapi_password, endpoint=endpoint)
         
         res = req\
             .get(
@@ -387,7 +392,8 @@ class WPModel:
             relpc = pc.query('query_fn == @qfn & environ == @environ')
 
             if relpc.index.size == 0:
-                warnings.warn(strings.errors.DATA_NOT_CACHED)
+                if not qfn in strings.MAGIC_DATA.values():
+                    warnings.warn(strings.errors.DATA_NOT_CACHED)
             else:
                 check_params = sorted(
                     pair for pair in q['query_params'].items()

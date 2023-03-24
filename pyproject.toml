@@ -4,6 +4,7 @@ requires = [
 	'pandas',
 	'numpy',
 	'pyyaml',
+	'dill',
 	'wpconnect @ git+https://github.com/wphospital/wpconnect',
 	'sprucepy @ git+https://github.com/wphospital/sprucepy'
 ]
