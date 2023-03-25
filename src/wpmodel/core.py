@@ -65,6 +65,9 @@ def fit(func):
     def fit(self, *args, **kwargs):
         result = func(self, *args, **kwargs)
 
+        if self.keep_fit_history and self.fitted_time:
+            self.fit_history[self.fitted_time] = self.model
+
         self.model = result
         self.fitted_time = dt.datetime.now(tz=pytz.utc)
 
@@ -126,9 +129,15 @@ class WPModel:
     def __init__(
         self,
         model_name : str = strings.DEFAULT_MODEL_NAME,
+        keep_fit_history : bool = False,
+        max_fit_history_size : int = 10,
         **kwargs
     ):
         self.model_name = model_name
+        self.keep_fit_history = keep_fit_history
+        self.max_fit_history_size = max_fit_history_size
+
+        self.fit_history = {}
         
         self.logfile = kwargs.get('logfile', None)
         
