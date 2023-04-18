@@ -65,11 +65,16 @@ def fit(func):
     def fit(self, *args, **kwargs):
         result = func(self, *args, **kwargs)
 
-        if self.keep_fit_history and self.fitted_time:
-            self.fit_history[self.fitted_time] = self.model
+        fitted_time = dt.datetime.now(tz=pytz.utc)
 
-        self.model = result
-        self.fitted_time = dt.datetime.now(tz=pytz.utc)
+        if self.keep_fit_history:
+            self.fit_history[fitted_time] = result
+
+            self.model = self.fit_history[fitted_time]
+        else:
+            self.model = result
+        
+        self.fitted_time = fitted_time
 
         return result
 
