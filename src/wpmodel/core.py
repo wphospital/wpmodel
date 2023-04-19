@@ -67,6 +67,8 @@ def fit(func):
 
         fitted_time = dt.datetime.now(tz=pytz.utc)
 
+        result._fitted_time = fitted_time
+
         if self.keep_fit_history:
             self.fit_history[fitted_time] = result
 
