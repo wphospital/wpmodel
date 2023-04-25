@@ -223,7 +223,7 @@ class WPModel:
             self.clear_data()
 
         with open(os.path.join(filepath, save_name), 'wb') as file: # TODO: Recursively make sure filepath exists
-            dill.dump(self, file)
+            dill.dump(self, file, recurse=True)
     
     def set_query_list(
         self,
