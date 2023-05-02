@@ -439,6 +439,7 @@ class WPModel:
                 if not match:
                     warnings.warn(strings.errors.DATA_NOT_CACHED)
 
+    @log
     def set_fitted_model(
         self,
         index : int = None,
@@ -458,7 +459,12 @@ class WPModel:
             return
 
         if index:
-            key = list(self.fit_history.keys())[index]
+            if index < len(self.fit_history.keys()):
+                key = list(self.fit_history.keys())[index]
+            else:
+                warnings.warn('Invalid fit key provided, defaulting to last')
+
+                key = list(self.fit_history.keys())[-1]
 
         self.model = self.fit_history[key]
         self.fitted_time = key
