@@ -458,7 +458,7 @@ class WPModel:
         if not self.keep_fit_history or len(self.fit_history) == 0:
             return
 
-        if index:
+        if index is not None:
             if index < len(self.fit_history.keys()):
                 key = list(self.fit_history.keys())[index]
             else:
