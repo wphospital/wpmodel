@@ -7,6 +7,7 @@ import time
 
 import datetime as dt
 import pytz
+from dateutil import parser
 
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
@@ -65,7 +66,16 @@ def fit(func):
     def fit(self, *args, **kwargs):
         result = func(self, *args, **kwargs)
 
-        fitted_time = dt.datetime.now(tz=pytz.utc)
+        if kwargs.get('fit_time_override'):
+            fitted_time = kwargs.get('fit_time_override')
+
+            if not isinstance(fitted_time, dt.datetime):
+                fitted_time = parser.parse(fitted_time)
+
+            if fitted_time.tzinfo is None:
+                fitted_time = fitted_time.astimezone(pytz.timezone('UTC'))
+        else:
+            fitted_time = dt.datetime.now(tz=pytz.utc)
 
         result._fitted_time = fitted_time
 
@@ -428,3 +438,33 @@ class WPModel:
 
                 if not match:
                     warnings.warn(strings.errors.DATA_NOT_CACHED)
+
+    def set_fitted_model(
+        self,
+        index : int = None,
+        key : dt.datetime = None
+    ):
+        """Sets the current model based on the fit history
+
+        Parameters
+        ----------
+        index : int
+            optional, index in the fit history keys list to set
+        key : datetime.datetime
+            optional, datetime representation of the fit history time
+        """
+
+        if not self.keep_fit_history of len(self.fit_history) == 0:
+            return
+
+        if index:
+            key = list(edb.fit_history.keys())[index]
+
+        self.model = self.fit_history[key]
+        self.fitted_time = key
+
+    def reset_fitted_model(self):
+        """Resets the currrent model to the last entry in the fit history
+        """
+
+        self.set_fitted_model(index=-1)
