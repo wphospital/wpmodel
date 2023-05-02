@@ -454,7 +454,7 @@ class WPModel:
             optional, datetime representation of the fit history time
         """
 
-        if not self.keep_fit_history of len(self.fit_history) == 0:
+        if not self.keep_fit_history or len(self.fit_history) == 0:
             return
 
         if index:
