@@ -458,7 +458,7 @@ class WPModel:
             return
 
         if index:
-            key = list(edb.fit_history.keys())[index]
+            key = list(self.fit_history.keys())[index]
 
         self.model = self.fit_history[key]
         self.fitted_time = key
