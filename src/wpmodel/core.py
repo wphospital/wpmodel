@@ -67,7 +67,7 @@ def fit(func):
         result = func(self, *args, **kwargs)
 
         try:
-            accuracy = self.get_accuracy()
+            accuracy = self.get_accuracy(result)
         except AttributeError as err:
             warnings.warn(err)
             
