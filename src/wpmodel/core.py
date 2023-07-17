@@ -66,6 +66,13 @@ def fit(func):
     def fit(self, *args, **kwargs):
         result = func(self, *args, **kwargs)
 
+        try:
+            accuracy = self.get_accuracy()
+        except AttributeError as err:
+            warnings.warn(err)
+            
+            accuracy = None
+
         if kwargs.get('fit_time_override'):
             fitted_time = kwargs.get('fit_time_override')
 
@@ -80,11 +87,16 @@ def fit(func):
         result._fitted_time = fitted_time
 
         if self.keep_fit_history:
-            self.fit_history[fitted_time] = result
+            self.fit_history[fitted_time] = {
+                'model': result,
+                'accuracy': accuracy
+            }
 
-            self.model = self.fit_history[fitted_time]
+            self.model = self.fit_history[fitted_time]['model']
+            self.accuracy = self.fit_history[fitted_time]['accuracy']
         else:
             self.model = result
+            self.accuracy = accuracy
         
         self.fitted_time = fitted_time
 
