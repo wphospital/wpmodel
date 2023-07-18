@@ -5,6 +5,7 @@ requires = [
 	'numpy',
 	'pyyaml',
 	'dill',
+	'azure-storage-blob',
 	'wpconnect @ git+https://github.com/wphospital/wpconnect',
 	'sprucepy @ git+https://github.com/wphospital/sprucepy'
 ]
