@@ -22,6 +22,7 @@ import warnings
     
 from . import strings
 from . import constants
+from . import helpers
 
 formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
 
@@ -223,6 +224,7 @@ class WPModel:
     def save(
         self,
         filepath : str = 'out',
+        to_cloud : bool = False,
         clear_data : bool = True
     ):
         """Dump the whole shebang as a dill to the filepath
@@ -231,6 +233,10 @@ class WPModel:
         ----------
         filepath : str
             the path to save the model to (the directory path, not filename)
+        to_cloud : bool
+            whether to save model to cloud
+            will override filepath if set to true
+            defaults to false
         clear_data : bool
             boolean indicating whether data should be cleared before save
             defaults to true
@@ -244,8 +250,13 @@ class WPModel:
         if clear_data:
             self.clear_data()
 
-        with open(os.path.join(filepath, save_name), 'wb') as file: # TODO: Recursively make sure filepath exists
-            dill.dump(self, file, recurse=True)
+        if to_cloud:
+            conn = helpers.container_conn()
+            blob_client = conn.upload_blob(name=save_name, data=dill.dumps(self), overwrite=True)
+            
+        else:
+            with open(os.path.join(filepath, save_name), 'wb') as file: # TODO: Recursively make sure filepath exists
+                dill.dump(self, file, recurse=True)
     
     def set_query_list(
         self,
