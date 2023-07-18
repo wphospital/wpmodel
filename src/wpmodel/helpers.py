@@ -4,11 +4,13 @@ from azure.storage.blob import BlobServiceClient
 import yaml
 import io
 
-with open('cfg.yml', 'rb') as file:
-    cfg = yaml.load(file, Loader=yaml.FullLoader)
+from . import constants
     
 def get_secrets():
-    return {k: secrets.get_secret_by_key(k, api_url=cfg['spruce_api']) for k in cfg['secrets']}
+    return {
+        k: secrets.get_secret_by_key(k, api_url=constants.SPRUCE_API_URL)
+        for k in constants.SECRETS
+    }
     
 def container_conn( ):
     """Establish Azure cloud connection to a blob container 
