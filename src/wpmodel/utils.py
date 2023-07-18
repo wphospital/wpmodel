@@ -1,7 +1,8 @@
 import os
 import re
 import dill
-import helpers  
+
+from . import helpers  
 
 def get_latest(
 	model_name : str,
