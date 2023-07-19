@@ -252,7 +252,7 @@ class WPModel:
 
         if to_cloud:
             conn = helpers.container_conn()
-            blob_client = conn.upload_blob(name=save_name, data=dill.dumps(self), overwrite=True)
+            blob_client = conn.upload_blob(name=save_name, data=dill.dumps(self, recurse=True), overwrite=True)
             
         else:
             with open(os.path.join(filepath, save_name), 'wb') as file: # TODO: Recursively make sure filepath exists
