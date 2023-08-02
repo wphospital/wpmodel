@@ -491,7 +491,7 @@ class WPModel:
 
                 key = list(self.fit_history.keys())[-1]
 
-        self.model = self.fit_history[key]
+        self.model = self.fit_history[key]['model']
         self.fitted_time = key
 
     def reset_fitted_model(self):
