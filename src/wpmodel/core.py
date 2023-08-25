@@ -279,7 +279,7 @@ class WPModel:
 
         if to_cloud:
             conn = helpers.container_conn()
-            blob_client = conn.upload_blob(name=save_name, data=dill.dumps(self), overwrite=True)
+            blob_client = conn.upload_blob(name=save_name, data=dill.dumps(self, recurse=True), overwrite=True)
             
         else:
             with open(os.path.join(filepath, save_name), 'wb') as file: # TODO: Recursively make sure filepath exists
@@ -518,7 +518,7 @@ class WPModel:
 
                 key = list(self.fit_history.keys())[-1]
 
-        self.model = self.fit_history[key]
+        self.model = self.fit_history[key]['model']
         self.fitted_time = key
 
     def reset_fitted_model(self):
