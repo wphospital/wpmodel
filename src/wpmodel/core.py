@@ -182,6 +182,9 @@ class WPModel:
         
         self.set_query_list(query_list)
         self.data_dict = {}
+        self._pred_column = pred_column
+        self._actual_column = actual_column
+        self._date_column = date_column
         
     def __repr__(self):
         return '<{} {} {:%Y-%m-%d %H:%M:%S}>'.format(
@@ -221,6 +224,30 @@ class WPModel:
             fh.setFormatter(formatter)
             logger.addHandler(fh)
 
+    @property
+    def pred_column(self):
+        return self._pred_column
+
+    @property
+    def actual_column(self):
+        return self._actual_column
+
+    @property
+    def date_column(self):
+        return self._date_column
+
+    @pred_column.setter
+    def pred_column(self, col):
+        self._pred_column = col
+
+    @actual_column.setter
+    def actual_column(self,col):
+        self._actual_column = col
+    
+    @date_column.setter
+    def date_column(self,col):
+        self._date_column = col
+    
     def save(
         self,
         filepath : str = 'out',
@@ -499,3 +526,45 @@ class WPModel:
         """
 
         self.set_fitted_model(index=-1)
+
+    def __add__(self, other):
+         
+        df= self.predict().merge(
+            other.predict(),
+            left_on=self.date_column, 
+            right_on=other.date_column,
+            how='outer')
+        return df[self.pred_column] + df[other.pred_column], df[self.actual_column] + df[other.actual_column]
+
+    def get_agg_prediction(self,query_string,date_agg='day'):
+        """get aggregated model forecast
+
+        Parameter
+        ---------
+         
+        query_string: dictionary
+            used to limit the forecast dataset
+        date_agg: str
+            date aggregation level
+
+        Return
+        ------
+        a DataFrame with aggregated prediction and acutual counts
+        """
+        query_string2 = 'ilevel_0 in ilevel_0' + "".join(query_string.values()) #for ed prediction
+        df = self.predict(query_string).query(query_string2)
+        df = helpers.add_agg_column(df,self.date_column,date_agg)
+        
+        date_column = date_agg 
+        p,a = helpers.agg_map.get(date_agg)
+        
+        today_dt = helpers.today()
+
+        agg_fr = df.groupby(date_column,as_index=False)[[self.pred_column, self.actual_column]].sum().sort_values(date_column)
+                
+        rename = {self.pred_column:self.model_name + '_' + p,self.actual_column: self.model_name +'_'+a}
+        
+        agg_fr.rename(columns=rename,inplace=True)
+                
+        return agg_fr
+

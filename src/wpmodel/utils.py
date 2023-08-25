@@ -43,5 +43,23 @@ def get_latest(
 
 	return model
 
+def get_all_models(
+	model_df : str = 'out',
+	from_cloud: bool = True
+):
+	if from_cloud:
+		conn = helpers.container_conn()
+		blob_list = conn.list_blobs()
+		 
+		models = set([
+			re.split('_\d+.pkl',i['name'])[0]  for i in blob_list 
+			if re.search('_\d+.pkl', i['name'])
+			])
+	else:
+		models = set([re.split('_\d+.pkl',x)[0] for x in os.listdir(model_df)\
+		 if re.search('_\d+.pkl',x)])
+	return models
+
+
 if __name__ == '__main__':
 	get_latest('ED Baseline Forecast')
