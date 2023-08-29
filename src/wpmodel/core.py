@@ -161,6 +161,9 @@ class WPModel:
         model_name : str = strings.DEFAULT_MODEL_NAME,
         keep_fit_history : bool = False,
         max_fit_history_size : int = 10,
+        actual_column: str = '',
+        pred_column: str = '',
+        date_column: str = ''
         **kwargs
     ):
         self.model_name = model_name
@@ -536,12 +539,11 @@ class WPModel:
             how='outer')
         return df[self.pred_column] + df[other.pred_column], df[self.actual_column] + df[other.actual_column]
 
-    def get_agg_prediction(self,query_string,date_agg='day'):
+    def get_agg_prediction(self,query_string,date_agg='day', **kwargs):
         """get aggregated model forecast
 
         Parameter
         ---------
-         
         query_string: dictionary
             used to limit the forecast dataset
         date_agg: str
@@ -551,7 +553,9 @@ class WPModel:
         ------
         a DataFrame with aggregated prediction and acutual counts
         """
-        query_string2 = 'ilevel_0 in ilevel_0' + "".join(query_string.values()) #for ed prediction
+        query_string2 = 'ilevel_0 in ilevel_0' + (
+                    " and " + ' and '.join(query_string.values()) if query_string.values() 
+                        else '' ) # to accomodate ed baseline prediction model
         df = self.predict(query_string).query(query_string2)
         df = helpers.add_agg_column(df,self.date_column,date_agg)
         
@@ -563,7 +567,6 @@ class WPModel:
         agg_fr = df.groupby(date_column,as_index=False)[[self.pred_column, self.actual_column]].sum().sort_values(date_column)
                 
         rename = {self.pred_column:self.model_name + '_' + p,self.actual_column: self.model_name +'_'+a}
-        
         agg_fr.rename(columns=rename,inplace=True)
                 
         return agg_fr
