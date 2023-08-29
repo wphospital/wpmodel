@@ -8,13 +8,26 @@ class Integration:
 
     def __init__(
         self,
-        models:list,
+        models:list =[],
         **kwargs
     ):
-        self.model_names = models
-        # self.set_model_repo(repo)
-        self.set_models(kwargs.get('from_cloud',False),kwargs.get('model_repo',''))
-    
+        self.models = models
+         
+        
+        if self.models:
+            self.model_names = [m.model_name for m in self.models]
+        elif kwargs.get('model_names',None):
+            self.model_names = kwargs.get('model_names')
+            if kwargs.get('model_repo', None):
+                self.set_models(from_cloud=False,model_repo=kwargs.get('model_repo'))
+            else:
+                self.set_models(from_cloud=True)
+            self.set_models(from_cloud=True)
+        else:
+            self.model_names= [i for i in utils.get_all_models(from_cloud=True) if 'cluster' not in i.lower()]
+            self.set_models(from_cloud=True)
+            
+        
     def set_models(self,from_cloud=True,model_repo=''):
         # if self.check_model_exist():
         #     self.models=[]
@@ -22,9 +35,12 @@ class Integration:
         #         model = get_latest(i)
         #         model.set_fitted_model(model,l[0])
         #         self.models.append(model)
-        self.models = [utils.get_latest(i,model_df=model_repo, from_cloud=from_cloud) for i in self.model_names]
+        if from_cloud:
+            self.models = [utils.get_latest(i,from_cloud=True) for i in self.model_names]
+        else:
+            self.models = [utils.get_latest(i,from_cloud=False,model_df=model_repo) for i in self.model_names]
             
-    def get_forecast(self,date_agg, start,end="2999-12-31"):
+    def get_forecast(self,date_agg, start,end="2999-12-31", **kwargs):
         """ get forecast for each model in model list, and standardize the prediction/acutal column names
             
 
@@ -43,9 +59,10 @@ class Integration:
         for m in self.models:
             string = {m.query_list[0]['query_fn'].strip('.sql'):f'{m.date_column}.between("{start}" , "{end}")'}
             # print(string)
-            df = m.get_pred_by_model(
+            df = m.get_agg_prediction(
                 string,
-                date_agg
+                date_agg,
+                **kwargs
                 )           
             
             df_final = pd.merge(df_final,df,how='outer').fillna(0)
