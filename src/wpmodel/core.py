@@ -143,10 +143,18 @@ def add(df1,  df2, attr='pred_column'):
         attr = [attr]
     for i in attr:
         column_name = f'total_{i}'
-        if i not in df1.__dict__:
-            df[column_name] = df
+        try:
         
-        df[column_name] = df[df1.__dict__[i]] + df[df2.__dict__[i]]
+            df[column_name] = df[df1.__dict__[i]] + df[df2.__dict__[i]]
+        except KeyError:
+            if i in df1.__dict__:
+                df[column_name] = df[df1.__dict__[i]]
+                warnings.warn(f"{i} is not in df2 attribute, return {i} from df1 as summation")
+            elif i in df2.__dict__:
+                df[column_name] = df[df2.__dict__[i]]
+                warnings.warn(f"{i} is not in df1 attribute, return {i} from df2 as summation")
+            else:
+                raise KeyError(f"{i} not defined in either dataframe")
        
     return df
 
@@ -180,8 +188,20 @@ def multiply(
         attr = [attr]
 
     for i in attr:
-        df[f'product_{i}'] = df[df1.__dict__[i]] * df[df2.__dict__[i]]
-    
+        column_name = f'product_{i}'
+
+        try:
+        
+            df[column_name] = df[df1.__dict__[i]] * df[df2.__dict__[i]]
+        except KeyError:
+            if i in df1.__dict__:
+                df[column_name] = df[df1.__dict__[i]]
+                warnings.warn(f"{i} is not in df2 attribute, return {i} from df1 as product")
+            elif i in df2.__dict__:
+                df[column_name] = df[df2.__dict__[i]]
+                warnings.warn(f"{i} is not in df1 attribute, return {i} from df2 as product")
+            else:
+                raise KeyError(f"{i} not defined in either dataframe")
     return df
 
 
