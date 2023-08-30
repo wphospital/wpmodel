@@ -105,6 +105,86 @@ def fit(func):
 
     return fit
 
+def predict(func):
+    """Decorator for standard fitting ops
+    """
+    @log
+    def predict(self, *args, **kwargs):
+        result = func(self, *args, **kwargs)
+
+        result.index_column = self.index_column
+        result.actual_column = self.actual_column
+        result.pred_column = self.pred_column
+
+        return result
+
+    return predict
+
+def add(df1,  df2, attr='pred_column'):
+    """adding df1, df2 attribute columns
+
+    Parameters
+    ----------
+    df1: DataFrame with defined index_column attribute along with all attributes in attr 
+    df2: DataFrame with defined index_column attribute along with all attributes in attr
+    attr: List of attributes to be added together
+     
+    Return
+    ------
+    a merged dataframe with listed attribute summation
+    """
+    df = df1.merge(df2,
+        how='outer',
+        left_on = df1.index_column, 
+        right_on = df2.index_column
+        )
+
+    if isinstance(attr,str):
+        attr = [attr]
+    for i in attr:
+        column_name = f'total_{i}'
+        if i not in df1.__dict__:
+            df[column_name] = df
+        
+        df[column_name] = df[df1.__dict__[i]] + df[df2.__dict__[i]]
+       
+    return df
+
+
+def multiply(
+    df1,
+    df2 ,
+    attr: list = ['pred_column','actual_column']   
+): 
+    '''merging two dataframes and get a multiplication of columns in attr
+    
+    Parameters
+    ----------
+    df1: DataFrame with defined index_column attribute
+    df2: DataFrame with defined index_column attribute
+    attr: List of attributes used in multiplication
+     
+    Return
+    ------
+    DataFrame of merged df1 and df2 based on their index_column, 
+    and len(attr) extra columns as of product
+    '''
+
+    df = df1.merge(df2,
+        left_on=df1.index_column,
+        right_on=df2.index_column,
+        how='inner'
+    ) 
+
+    if isinstance(attr,str):
+        attr = [attr]
+
+    for i in attr:
+        df[f'product_{i}'] = df[df1.__dict__[i]] * df[df2.__dict__[i]]
+    
+    return df
+
+
 class WPModel:
     """
     A parent class for standardized model management at WPH.
@@ -161,9 +241,9 @@ class WPModel:
         model_name : str = strings.DEFAULT_MODEL_NAME,
         keep_fit_history : bool = False,
         max_fit_history_size : int = 10,
-        actual_column: str = '',
-        pred_column: str = '',
-        date_column: str = ''
+        actual_column: str ,
+        pred_column: str ,
+        index_column: str  
         **kwargs
     ):
         self.model_name = model_name
@@ -185,9 +265,9 @@ class WPModel:
         
         self.set_query_list(query_list)
         self.data_dict = {}
-        self._pred_column = pred_column
-        self._actual_column = actual_column
-        self._date_column = date_column
+        self.pred_column = pred_column
+        self.actual_column = actual_column
+        self.date_column = index_column
         
     def __repr__(self):
         return '<{} {} {:%Y-%m-%d %H:%M:%S}>'.format(
@@ -227,29 +307,6 @@ class WPModel:
             fh.setFormatter(formatter)
             logger.addHandler(fh)
 
-    @property
-    def pred_column(self):
-        return self._pred_column
-
-    @property
-    def actual_column(self):
-        return self._actual_column
-
-    @property
-    def date_column(self):
-        return self._date_column
-
-    @pred_column.setter
-    def pred_column(self, col):
-        self._pred_column = col
-
-    @actual_column.setter
-    def actual_column(self,col):
-        self._actual_column = col
-    
-    @date_column.setter
-    def date_column(self,col):
-        self._date_column = col
     
     def save(
         self,
@@ -530,15 +587,58 @@ class WPModel:
 
         self.set_fitted_model(index=-1)
 
-    def __add__(self, other):
-         
-        df= self.predict().merge(
-            other.predict(),
-            left_on=self.date_column, 
-            right_on=other.date_column,
-            how='outer')
-        return df[self.pred_column] + df[other.pred_column], df[self.actual_column] + df[other.actual_column]
+    def add(self, model2, query_string_list=[]):
+        """add all prediction and acutual counts from components to get a total prediction & acutual
+        """
+        if isinstance(model2, WPModel):
+            if len(query_string_list) >= 2:
 
+                df1 = self.predict(query_string_list[0])
+                df2 = model2.predict(query_string_list[1])
+            elif len(query_string_list) == 1:
+                df1 = self.predict(query_string_list[0])
+                df2 = model2.predict()
+            else:
+                df1 = self.predict()
+                df2 = model2.predict()
+            return add(df1, df2, ['pred_column', 'actual_column'])
+        
+        else:
+            raise TypeError(f"{model2} is not a WPModel instance")
+ 
+
+    def multiply(
+        self,
+        model2,
+        query_string_list=[] 
+    ): 
+
+        '''decompose prediction & actual totals into clusters
+        
+        Parameters
+        ----------
+        model2:Cluster model with 
+        query_string_list: a list of query_strings to pass to predict() accordingly
+
+        Return
+        ------
+        DataFrame of decomposed total into clusters 
+        '''
+        if len(query_string_list) == 2:
+
+            df1 = self.predict(query_string_list[0])
+            df2 = model2.predict(query_string_list[1])
+        elif len(query_string_list) == 1:
+            df1 = self.predict(query_string_list[0])
+            df2 = model2.predict()
+        else:
+            df1 = self.predict()
+            df2 = model2.predict()
+
+        df = multiply(df1, df2, ['pred_column', 'actual_column'])  
+        return df 
+
+        
     def get_agg_prediction(
         self,
         query_string: dict = {},
@@ -563,9 +663,11 @@ class WPModel:
                     if query_string.values()\
                     else '' 
                 ) # to accomodate ed baseline prediction model
-        query_string = {} if re.search(r'ed base.*',self.model_name,re.IGNORECASE) else query_string
-
-        df = self.predict(query_string).query(query_string2)
+        try:
+            df = self.predict(query_string).query(query_string2)
+        except KeyError:
+            df = self.predict().query(query_string2)
+        
         df = add_agg_column(df,self.date_column,date_agg)
         
         date_column = date_agg 
