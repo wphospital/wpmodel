@@ -258,12 +258,12 @@ class WPModel:
     
     def __init__(
         self,
+        actual_column: str ,
+        pred_column: str ,
+        index_column: str ,
         model_name : str = strings.DEFAULT_MODEL_NAME,
         keep_fit_history : bool = False,
         max_fit_history_size : int = 10,
-        actual_column: str ,
-        pred_column: str ,
-        index_column: str  
         **kwargs
     ):
         self.model_name = model_name
