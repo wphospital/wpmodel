@@ -24,6 +24,8 @@ from . import strings
 from . import constants
 from . import helpers
 
+
+
 formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
 
 logger = logging.getLogger('WPModel Logger')
@@ -127,7 +129,7 @@ def add(df1,  df2, attr='pred_column'):
     ----------
     df1: DataFrame with defined index_column attribute along with all attributes in attr 
     df2: DataFrame with defined index_column attribute along with all attributes in attr
-    attr: List of attributes to be added together
+    attr: str or List of attributes to be added together
      
     Return
     ------
@@ -138,6 +140,8 @@ def add(df1,  df2, attr='pred_column'):
         left_on = df1.index_column, 
         right_on = df2.index_column
         )
+    df[df1.index_column].fillna(df[df2.index_column],inplace=True)
+    df.index_column = df1.index_column
 
     if isinstance(attr,str):
         attr = [attr]
@@ -145,16 +149,52 @@ def add(df1,  df2, attr='pred_column'):
         column_name = f'total_{i}'
         try:
         
-            df[column_name] = df[df1.__dict__[i]] + df[df2.__dict__[i]]
+            df[column_name] = df[df1.__dict__[i]].fillna(0) + df[df2.__dict__[i]].fillna(0)
         except KeyError:
-            if i in df1.__dict__:
-                df[column_name] = df[df1.__dict__[i]]
-                warnings.warn(f"{i} is not in df2 attribute, return {i} from df1 as summation")
-            elif i in df2.__dict__:
-                df[column_name] = df[df2.__dict__[i]]
-                warnings.warn(f"{i} is not in df1 attribute, return {i} from df2 as summation")
-            else:
-                raise KeyError(f"{i} not defined in either dataframe")
+            ## check if error is due to duplicated columns being renamed,
+             
+            if i in df1.__dict__.keys() and i in df2.__dict__.keys():
+            
+                ## if column names of this attribute from both table are duplicated
+                ## or both attribute columns are duplicated with regular column name from the other table
+                ## loophole: colname_x, colname_y are both from df2, and df2 attribute column is colname_x, 
+                ##  and vice versa
+            
+                if f"{df1.__dict__[i]}_x" in df.columns and f"{df2.__dict__[i]}_y" in df.columns:
+                    df[column_name] = df[f"{df1.__dict__[i]}_x"].fillna(0) + \
+                                        df[f"{df2.__dict__[i]}_y"].fillna(0)
+
+                ## if duplicated names are from attribute column from one table,
+                ## and a regular name from the other table
+                elif f"{df1.__dict__[i]}_x" in df.columns:
+                    df[column_name] = df[f"{df1.__dict__[i]}_x"].fillna(0) + \
+                                        df[df2.__dict__[i]].fillna(0)                   
+                else:
+                    df[column_name] = df[df1.__dict__[i]].fillna(0) + \
+                                        df[f"{df2.__dict__[i]}_y"].fillna(0)
+                    
+            ## only df1 has the attribute, ignore df2   
+            elif i in df1.__dict__.keys():
+                warnings.warn(f"{i} is not in df2 attribute, return {i} from df1 as result")
+            
+                # check if df1 attribute name is duplicated with df2 column
+                if df1.__dict__[i] not in df.columns:
+                    df[column_name] = df[f"{df1.__dict__[i]}_x"]
+                  
+                else:
+                    df[column_name] = df[df1.__dict__[i]]
+            
+            ## only df2 has the attribute, ignore df1         
+            elif  i in df2.__dict__.keys():
+                warnings.warn(f"{i} is not in df1 attribute, return {i} from df2 as result")
+            
+                # check if df2 attribute name is duplicated with df1 column
+                if df2.__dict__[i] not in df.columns:
+                    df[column_name] = df[f"{df2.__dict__[i]}_y"]
+                else:
+                    df[column_name] = df[df2.__dict__[i]]
+            
+        df.__dict__[i] = column_name
        
     return df
 
@@ -170,38 +210,39 @@ def multiply(
     ----------
     df1: DataFrame with defined index_column attribute
     df2: DataFrame with defined index_column attribute
-    attr: List of attributes used in multiplication
+    attr: str or list of attributes used in multiplication
      
     Return
     ------
-    DataFrame of merged df1 and df2 based on their index_column, 
-    and len(attr) extra columns as of product
+    DataFrame of merged df1 and df2 index column & attribute columns
+    and len(attr) extra columns as the product
     '''
+    if isinstance(attr,str):
+        attr = [attr]
 
-    df = df1.merge(df2,
+    _lst = attr.copy()
+    _lst.append('index_column')
+ 
+    _lst = [df2.__dict__[i] for i in _lst]
+
+    df = df1.merge(df2[_lst],
         left_on=df1.index_column,
         right_on=df2.index_column,
         how='inner'
     ) 
 
-    if isinstance(attr,str):
-        attr = [attr]
+    df.index_column = df1.index_column
+
+    
 
     for i in attr:
-        column_name = f'product_{i}'
+        column_name = f'product_{df1.__dict__[i]}'
 
-        try:
+        # print(i, df1.__dict__[i],df1.__dict__[i] in df.columns)
+        df[column_name] = df[df1.__dict__[i]].fillna(1) * df[df2.__dict__[i]].fillna(1)
         
-            df[column_name] = df[df1.__dict__[i]] * df[df2.__dict__[i]]
-        except KeyError:
-            if i in df1.__dict__:
-                df[column_name] = df[df1.__dict__[i]]
-                warnings.warn(f"{i} is not in df2 attribute, return {i} from df1 as product")
-            elif i in df2.__dict__:
-                df[column_name] = df[df2.__dict__[i]]
-                warnings.warn(f"{i} is not in df1 attribute, return {i} from df2 as product")
-            else:
-                raise KeyError(f"{i} not defined in either dataframe")
+                
+        df.__dict__[i] = column_name
     return df
 
 
@@ -606,7 +647,7 @@ class WPModel:
         """
 
         self.set_fitted_model(index=-1)
-
+        
     def add(self, model2, query_string_list=[]):
         """add all prediction and acutual counts from components to get a total prediction & acutual
         """
@@ -625,6 +666,8 @@ class WPModel:
         
         else:
             raise TypeError(f"{model2} is not a WPModel instance")
+
+        return WPModelPredict(df)
  
 
     def multiply(
