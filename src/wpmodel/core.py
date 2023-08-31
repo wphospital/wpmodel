@@ -19,7 +19,9 @@ import dill
 import os
 import json
 import warnings
-    
+
+from pandas.core.base import PandasObject
+
 from . import strings
 from . import constants
 from . import helpers
@@ -233,18 +235,17 @@ def multiply(
 
     df.index_column = df1.index_column
 
-    
-
     for i in attr:
         column_name = f'product_{df1.__dict__[i]}'
 
         # print(i, df1.__dict__[i],df1.__dict__[i] in df.columns)
-        df[column_name] = df[df1.__dict__[i]].fillna(1) * df[df2.__dict__[i]].fillna(1)
-        
+        df[column_name] = df[df1.__dict__[i]].fillna(1) * df[df2.__dict__[i]].fillna(1)       
                 
         df.__dict__[i] = column_name
     return df
 
+PandasObject.wpadd = add
+PandasObject.wpmultiply = multiply
 
 class WPModel:
     """
