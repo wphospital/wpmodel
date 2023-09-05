@@ -116,7 +116,7 @@ def predict(func):
     def predict(self, *args, **kwargs):
         result = func(self, *args, **kwargs)
 
-        result.index_column = self.index_column
+        result.index_column = self.get_index_column()
         result.actual_column = self.actual_column
         result.pred_column = self.pred_column
 
@@ -369,7 +369,9 @@ class WPModel:
             fh.setFormatter(formatter)
             logger.addHandler(fh)
 
-    
+    def get_index_column(self):
+        return self.index_column if isinstance(self.index_column, list) else [self.index_column]
+
     def save(
         self,
         filepath : str = 'out',
