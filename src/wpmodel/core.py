@@ -329,7 +329,7 @@ class WPModel:
         self.data_dict = {}
         self.pred_column = pred_column
         self.actual_column = actual_column
-        self.date_column = index_column
+        self.index_column = index_column
         
     def __repr__(self):
         return '<{} {} {:%Y-%m-%d %H:%M:%S}>'.format(
