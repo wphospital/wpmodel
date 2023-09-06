@@ -21,6 +21,7 @@ import json
 import warnings
 
 from pandas.core.base import PandasObject
+from itertools import chain
 
 from . import strings
 from . import constants
@@ -142,7 +143,9 @@ def add(df1,  df2, attr='pred_column'):
         left_on = df1.index_column, 
         right_on = df2.index_column
         )
-    df[df1.index_column].fillna(df[df2.index_column],inplace=True)
+    df.loc[:,df1.index_column] = df[df1.index_column].fillna(\
+                {a1[m]:df_ed[a2[m]] for m in range(len(df1.index_column))}
+                )
     df.index_column = df1.index_column
 
     if isinstance(attr,str):
@@ -204,7 +207,9 @@ def add(df1,  df2, attr='pred_column'):
 def multiply(
     df1,
     df2 ,
-    attr: list = ['pred_column','actual_column']   
+    attr: list = ['pred_column','actual_column'],
+    left_on = None,
+    right_on = None
 ): 
     '''merging two dataframes and get a multiplication of columns in attr
     
@@ -225,15 +230,31 @@ def multiply(
     _lst = attr.copy()
     _lst.append('index_column')
  
-    _lst = [df2.__dict__[i] for i in _lst]
+    _lst = [[df2.__dict__[i]] if not isinstance(df2.__dict__[i], list) else df2.__dict__[i] for i in _lst]
+
+    _lst = list(set(list(chain(*_lst))))
+    
+    if not left_on:
+        left_on = df1.index_column.copy()    
+        
+    if isinstance(left_on,str):        
+        left_on = [left_on]
+
+    if not right_on:
+        right_on = df2.index_column.copy()
+        
+    if isinstance(right_on,str):
+        right_on = [right_on]
 
     df = df1.merge(df2[_lst],
-        left_on=df1.index_column,
-        right_on=df2.index_column,
-        how='inner'
-    ) 
+            left_on=left_on,
+            right_on=right_on,
+            how='inner'
+        ) 
 
-    df.index_column = df1.index_column
+    final_index = df1.index_column.copy()
+    final_index.extend(df2.index_column)
+    df.index_column = list(set(final_index))
 
     for i in attr:
         column_name = f'product_{df1.__dict__[i]}'
@@ -246,6 +267,41 @@ def multiply(
 
 PandasObject.wpadd = add
 PandasObject.wpmultiply = multiply
+
+def get_agg(
+    df,
+    agg_column: = None,
+    ):
+    """get aggregated model forecast
+    
+    Parameter
+    ---------
+    df: DataFrame with pred_column, actual_column
+    agg_column: str or list
+        column to be used as aggragation level
+    
+    Return
+    ------
+    a DataFrame with aggregated prediction and acutual counts
+    """  
+    if not agg_column and isinstance(agg_column,str) and not is_date(df[agg_column]):
+        agg_column = [agg_column]
+    agg_column = df.index_column if not agg_column else agg_column
+
+    if is_date(df[agg_column]):
+
+        agg_fr = df.groupby(pd.Grouper(key=agg_column, axis=0, freq='1D', sort=True))\
+                [[df.pred_column,df.actual_column]].sum().reset_index() 
+    else:
+        agg_fr = df.groupby(agg_column,as_index=False)\
+                [[df.pred_column,df.actual_column]].sum()
+      
+    agg_fr.index_column = df.index_column 
+    agg_fr.pred_column = df.pred_column   
+    agg_fr.actual_column = df.actual_column
+            
+    return agg_fr
+
 
 class WPModel:
     """
@@ -651,99 +707,3 @@ class WPModel:
 
         self.set_fitted_model(index=-1)
         
-    def add(self, model2, query_string_list=[]):
-        """add all prediction and acutual counts from components to get a total prediction & acutual
-        """
-        if isinstance(model2, WPModel):
-            if len(query_string_list) >= 2:
-
-                df1 = self.predict(query_string_list[0])
-                df2 = model2.predict(query_string_list[1])
-            elif len(query_string_list) == 1:
-                df1 = self.predict(query_string_list[0])
-                df2 = model2.predict()
-            else:
-                df1 = self.predict()
-                df2 = model2.predict()
-            return add(df1, df2, ['pred_column', 'actual_column'])
-        
-        else:
-            raise TypeError(f"{model2} is not a WPModel instance")
-
-        return WPModelPredict(df)
- 
-
-    def multiply(
-        self,
-        model2,
-        query_string_list=[] 
-    ): 
-
-        '''decompose prediction & actual totals into clusters
-        
-        Parameters
-        ----------
-        model2:Cluster model with 
-        query_string_list: a list of query_strings to pass to predict() accordingly
-
-        Return
-        ------
-        DataFrame of decomposed total into clusters 
-        '''
-        if len(query_string_list) == 2:
-
-            df1 = self.predict(query_string_list[0])
-            df2 = model2.predict(query_string_list[1])
-        elif len(query_string_list) == 1:
-            df1 = self.predict(query_string_list[0])
-            df2 = model2.predict()
-        else:
-            df1 = self.predict()
-            df2 = model2.predict()
-
-        df = multiply(df1, df2, ['pred_column', 'actual_column'])  
-        return df 
-
-        
-    def get_agg_prediction(
-        self,
-        query_string: dict = {},
-        date_agg: str = 'day',
-        **kwargs):
-        """get aggregated model forecast
-        
-        Parameter
-        ---------
-         
-        query_string: dictionary
-            used to limit the forecast result set
-        date_agg: str
-            date aggregation level
-        
-        Return
-        ------
-        a DataFrame with aggregated prediction and acutual counts
-        """  
-        query_string2 =  'ilevel_0 in ilevel_0' + (
-                    (" and " + ' and '.join(query_string.values()))
-                    if query_string.values()\
-                    else '' 
-                ) # to accomodate ed baseline prediction model
-        try:
-            df = self.predict(query_string).query(query_string2)
-        except KeyError:
-            df = self.predict().query(query_string2)
-        
-        df = add_agg_column(df,self.date_column,date_agg)
-        
-        date_column = date_agg 
-        p,a = agg_map.get(date_agg)
-        
-        today_dt = today()
-        
-        agg_fr = df.groupby(date_column,as_index=False)[[self.pred_column, self.actual_column]].sum().sort_values(date_column)
-                
-        rename = {self.pred_column:self.model_name + '_' + p,self.actual_column: self.model_name +'_'+a}       
-        agg_fr.rename(columns=rename,inplace=True)
-                
-        return agg_fr
