@@ -270,7 +270,7 @@ PandasObject.wpmultiply = multiply
 
 def get_agg(
     df,
-    agg_column: = None,
+    agg_column=None,
     ):
     """get aggregated model forecast
     
