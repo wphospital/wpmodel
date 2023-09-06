@@ -145,7 +145,7 @@ def add(df1,  df2, attr='pred_column'):
         right_on = df2.index_column
         )
     df.loc[:,df1.index_column] = df[df1.index_column].fillna(\
-                {a1[m]:df_ed[a2[m]] for m in range(len(df1.index_column))}
+                {df1.index_column[m]:df[df2.index_column[m]] for m in range(len(df1.index_column))}
                 )
     df.index_column = df1.index_column
 
