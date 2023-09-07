@@ -19,10 +19,16 @@ import dill
 import os
 import json
 import warnings
-    
+
+from pandas.core.base import PandasObject
+from itertools import chain
+from pandas.core.dtypes.api import is_datetime64_any_dtype as is_date
+
 from . import strings
 from . import constants
 from . import helpers
+
+
 
 formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
 
@@ -70,7 +76,7 @@ def fit(func):
         try:
             accuracy = self.get_accuracy(result)
         except AttributeError as err:
-            warnings.warn(err)
+            warnings.warn(str(err))
             
             accuracy = None
 
@@ -104,6 +110,229 @@ def fit(func):
         return result
 
     return fit
+
+def predict(func):
+    """Decorator for standard fitting ops
+    """
+    @log
+    def predict(self, *args, **kwargs):
+        result = func(self, *args, **kwargs)
+
+        result.index_column = self.get_index_column()
+        result.actual_column = self.actual_column
+        result.pred_column = self.pred_column
+
+        return result
+
+    return predict
+
+def add(df1,  df2, attr='pred_column'):
+    """adding df1, df2 attribute columns
+
+    Parameters
+    ----------
+    df1: DataFrame with defined index_column attribute along with all attributes in attr 
+    df2: DataFrame with defined index_column attribute along with all attributes in attr
+    attr: str or List of attributes to be added together
+     
+    Return
+    ------
+    a merged dataframe with listed attribute summation
+    """
+    df = df1.merge(df2,
+        how='outer',
+        left_on = df1.index_column, 
+        right_on = df2.index_column
+        )
+
+    # handle duplicated index_column with columns from the other table
+    for i in range(len(df1.index_column)):
+        if df1.index_column[i] != df2.index_column[i]:
+        
+            if df2.index_column[i] not in df1.columns and df1.index_column[i] not in df2.columns:
+                df.loc[:,df1.index_column[i]] = df[df1.index_column[i]].fillna(df[df2.index_column[i]])   
+            elif df2.index_column[i] in df1.columns and df1.index_column[i] not in df2.columns:
+                df.loc[:,df1.index_column[i]] = df[ df1.index_column[i] ].fillna(df[f'{df2.index_column[i]}_y'])
+            elif df1.index_column[i] in df2.columns  and df2.index_column[i] not in df1.columns:
+                df.loc[:,df1.index_column[i]] = df[f'{df1.index_column[i]}_x'].fillna(df[ df2.index_column[i]])
+            else:
+                df.loc[:,df1.index_column[i]] = df[f'{df1.index_column[i]}_x'].fillna(df[f'{df2.index_column[i]}_y'])
+    df.index_column = df1.index_column
+
+    if isinstance(attr,str):
+        attr = [attr]
+    for i in attr:
+        column_name = f'total_{i}'
+        try:
+        
+            df[column_name] = df[df1.__dict__[i]].fillna(0) + df[df2.__dict__[i]].fillna(0)
+        except KeyError:
+            ## check if error is due to duplicated columns being renamed,
+             
+            if i in df1.__dict__.keys() and i in df2.__dict__.keys():
+            
+                ## if column names of this attribute from both table are duplicated
+                ## or both attribute columns are duplicated with regular column name from the other table
+                ## loophole: colname_x, colname_y are both from df2, and df2 attribute column is colname_x, 
+                ##  and vice versa
+            
+                if f"{df1.__dict__[i]}_x" in df.columns and f"{df2.__dict__[i]}_y" in df.columns:
+                    df[column_name] = df[f"{df1.__dict__[i]}_x"].fillna(0) + \
+                                        df[f"{df2.__dict__[i]}_y"].fillna(0)
+
+                ## if duplicated names are from attribute column from one table,
+                ## and a regular name from the other table
+                elif f"{df1.__dict__[i]}_x" in df.columns:
+                    df[column_name] = df[f"{df1.__dict__[i]}_x"].fillna(0) + \
+                                        df[df2.__dict__[i]].fillna(0)                   
+                else:
+                    df[column_name] = df[df1.__dict__[i]].fillna(0) + \
+                                        df[f"{df2.__dict__[i]}_y"].fillna(0)
+                    
+            ## only df1 has the attribute, ignore df2   
+            elif i in df1.__dict__.keys():
+                warnings.warn(f"{i} is not in df2 attribute, return {i} from df1 as result")
+            
+                # check if df1 attribute name is duplicated with df2 column
+                if df1.__dict__[i] not in df.columns:
+                    df[column_name] = df[f"{df1.__dict__[i]}_x"]
+                  
+                else:
+                    df[column_name] = df[df1.__dict__[i]]
+            
+            ## only df2 has the attribute, ignore df1         
+            elif  i in df2.__dict__.keys():
+                warnings.warn(f"{i} is not in df1 attribute, return {i} from df2 as result")
+            
+                # check if df2 attribute name is duplicated with df1 column
+                if df2.__dict__[i] not in df.columns:
+                    df[column_name] = df[f"{df2.__dict__[i]}_y"]
+                else:
+                    df[column_name] = df[df2.__dict__[i]]
+            
+        df.__dict__[i] = column_name
+       
+    return df
+
+
+def multiply(
+    df1,
+    df2 ,
+    attr: list = ['pred_column'],
+    left_on = None,
+    right_on = None
+): 
+    '''merging two dataframes and get a multiplication of columns in attr
+    
+    Parameters
+    ----------
+    df1: DataFrame with defined index_column attribute
+    df2: DataFrame with defined index_column attribute
+    attr: str or list of attributes used in multiplication
+    left_on: str or list. Used in merging condition, replaced with index_column if not given
+    right_on: str or list. Used in merging condition, replaced with index_column if not given
+
+    Return
+    ------
+    DataFrame of merged df1 and df2 index column & attribute columns
+    and len(attr) extra columns as the product
+    '''
+    if isinstance(attr,str):
+        attr = [attr]
+
+    if not left_on:
+        left_on = df1.index_column.copy()
+             
+    if isinstance(left_on,str):        
+        left_on = [left_on]
+
+    if not right_on:
+        right_on = df2.index_column.copy()
+        
+    if isinstance(right_on,str):
+        right_on = [right_on]
+        
+    _lst = attr.copy()
+    _lst.append('index_column')
+
+    _lst = [[df2.__dict__[i]] if not isinstance(df2.__dict__[i], list) else df2.__dict__[i] for i in _lst]
+    _lst.append(right_on)
+    _lst = list(set(list(chain(*_lst))))
+    
+    df = df1.merge(df2[_lst],
+            left_on=left_on,
+            right_on=right_on,
+            how='inner'
+        ) 
+  
+    # if any of index_columns has duplicate after merging, create a new column 
+    # with values copied from the duplicated column
+    for i in df1.index_column:
+        if (i not in left_on  or (i in left_on and i not in right_on ))\
+            and i in df2.columns:
+            df[i] = df[f'{i}_x']      
+    
+    for i in df2.index_column:
+        if (i not in right_on  or (i not in left_on and i in right_on ))\
+                and i in df1.columns:
+            df[i] = df[f'{i}_y']
+                    
+    final_index = df1.index_column.copy()
+    final_index.extend(df2.index_column) 
+    df.index_column = list(set(final_index))
+
+    for i in attr:
+        column_name = f'product_{df1.__dict__[i]}'
+        if df2.__dict__[i] in df1.columns: 
+            b = df[f'{df2.__dict__[i]}_y'].fillna(1)
+        else:
+            b = df[df2.__dict__[i]].fillna(1)
+        if df1.__dict__[i] in _lst: 
+            a = df[f'{df1.__dict__[i]}_x'].fillna(1)
+        else:
+            a = df[df1.__dict__[i]].fillna(1) 
+        
+        df[column_name] = a * b 
+        df.__dict__[i] = column_name
+    return df
+
+PandasObject.wpadd = add
+PandasObject.wpmultiply = multiply
+
+def get_agg(
+    df,
+    agg_column=None,
+    ):
+    """get aggregated model forecast
+    
+    Parameter
+    ---------
+    df: DataFrame with pred_column, actual_column
+    agg_column: str or list
+        column to be used as aggragation level
+    
+    Return
+    ------
+    a DataFrame with aggregated prediction and acutual counts
+    """  
+    if not agg_column and isinstance(agg_column,str) and not is_date(df[agg_column]):
+        agg_column = [agg_column]
+    agg_column = df.index_column if not agg_column else agg_column
+
+    if is_date(df[agg_column]):
+
+        agg_fr = df.groupby(pd.Grouper(key=agg_column, axis=0, freq='1D', sort=True))\
+                [[df.pred_column,df.actual_column]].sum().reset_index() 
+    else:
+        agg_fr = df.groupby(agg_column,as_index=False)\
+                [[df.pred_column,df.actual_column]].sum()
+      
+    agg_fr.index_column = df.index_column 
+    agg_fr.pred_column = df.pred_column   
+    agg_fr.actual_column = df.actual_column
+            
+    return agg_fr
+
 
 class WPModel:
     """
@@ -158,6 +387,9 @@ class WPModel:
     
     def __init__(
         self,
+        actual_column: str ,
+        pred_column: str ,
+        index_column: str ,
         model_name : str = strings.DEFAULT_MODEL_NAME,
         keep_fit_history : bool = False,
         max_fit_history_size : int = 10,
@@ -182,6 +414,9 @@ class WPModel:
         
         self.set_query_list(query_list)
         self.data_dict = {}
+        self.pred_column = pred_column
+        self.actual_column = actual_column
+        self.index_column = index_column
         
     def __repr__(self):
         return '<{} {} {:%Y-%m-%d %H:%M:%S}>'.format(
@@ -220,6 +455,9 @@ class WPModel:
             fh.setLevel(logging.INFO)
             fh.setFormatter(formatter)
             logger.addHandler(fh)
+
+    def get_index_column(self):
+        return self.index_column if isinstance(self.index_column, list) else [self.index_column]
 
     def save(
         self,
@@ -499,3 +737,4 @@ class WPModel:
         """
 
         self.set_fitted_model(index=-1)
+        
