@@ -276,9 +276,9 @@ def multiply(
         if (i not in right_on  or (i not in left_on and i in right_on ))\
                 and i in df1.columns:
             df[i] = df[f'{i}_y']
-
-    final_index.extend(df2.index_column)   
+                    
     final_index = df1.index_column.copy()
+    final_index.extend(df2.index_column) 
     df.index_column = list(set(final_index))
 
     for i in attr:
