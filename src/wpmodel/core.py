@@ -74,7 +74,7 @@ def fit(func):
         try:
             accuracy = self.get_accuracy(result)
         except AttributeError as err:
-            warnings.warn(err)
+            warnings.warn(str(err))
             
             accuracy = None
 
