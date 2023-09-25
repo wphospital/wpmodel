@@ -66,9 +66,9 @@ def get_all_models(
 	latest_models = []
 	for m in models:
 		try:
-			latest_models.append((m, 'Loadable', get_latest(m)))
-		except ValueError as err:
-			latest_models.append((m, 'Load Error', {}))
+			latest_models.append((m, 'Loadable', None, get_latest(m)))
+		except Exception as err:
+			latest_models.append((m, 'Load Error', str(err), {}))
 
 	return pd.DataFrame({
 		m[0]: {
