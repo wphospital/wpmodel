@@ -74,15 +74,7 @@ def get_all_models(
 		except Exception as err:
 			latest_models.append((m, 'Load Error', str(err), Placeholder))
 
-	return pd.DataFrame({
-		m[0]: {
-			'status': m[1],
-			'error': m[2],
-			'last_created_time': m[3].__dict__.get('created_time'),
-			'last_fitted_time': m[3].__dict__.get('fitted_time')
-		}
-		for m in latest_models
-	})
+	return helpers.compile_model_info(latest_models)
 
 
 if __name__ == '__main__':

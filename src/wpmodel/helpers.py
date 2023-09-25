@@ -7,6 +7,8 @@ import io
 from . import constants
 import datetime as dt
 import pytz
+
+import pandas as pd
     
 def get_secrets():
     return {
@@ -203,3 +205,13 @@ class FakeFile:
     def __exit__(self, type, value, tb):
         self.f.close()
 
+def compile_model_info(latest_models):
+    return pd.DataFrame({
+        m[0]: {
+            'status': m[1],
+            'error': m[2],
+            'last_created_time': m[3].__dict__.get('created_time'),
+            'last_fitted_time': m[3].__dict__.get('fitted_time')
+        }
+        for m in latest_models
+    })
