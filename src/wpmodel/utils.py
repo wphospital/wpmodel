@@ -43,6 +43,10 @@ def get_latest(
 
 	return model
 
+class Placeholder:
+	def __init__(self):
+		pass
+
 def get_all_models(
 	model_df : str = 'out',
 	from_cloud: bool = True,
@@ -68,13 +72,14 @@ def get_all_models(
 		try:
 			latest_models.append((m, 'Loadable', None, get_latest(m)))
 		except Exception as err:
-			latest_models.append((m, 'Load Error', str(err), {}))
+			latest_models.append((m, 'Load Error', str(err), Placeholder))
 
 	return pd.DataFrame({
 		m[0]: {
 			'status': m[1],
-			'last_created_time': m[2].__dict__.get('created_time'),
-			'last_fitted_time': m[2].__dict__.get('fitted_time')
+			'error': m[2],
+			'last_created_time': m[3].__dict__.get('created_time'),
+			'last_fitted_time': m[3].__dict__.get('fitted_time')
 		}
 		for m in latest_models
 	})
