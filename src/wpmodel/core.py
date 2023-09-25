@@ -120,10 +120,7 @@ def predict(func):
 
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
-
-            result.index_column = self.get_index_column()
-            result.actual_column = self.actual_column
-            result.pred_column = self.pred_column
+            result = self._tag_prediction(result)
 
         return result
 
@@ -458,6 +455,13 @@ class WPModel:
             fh.setLevel(logging.INFO)
             fh.setFormatter(formatter)
             logger.addHandler(fh)
+
+    def _tag_prediction(self, pred):
+        pred.index_column = self.get_index_column()
+        pred.actual_column = self.actual_column
+        pred.pred_column = self.pred_column
+
+        return pred
 
     def get_index_column(self):
         return self.index_column if isinstance(self.index_column, list) else [self.index_column]
