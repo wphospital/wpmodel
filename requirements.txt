@@ -1,0 +1,10 @@
+pandas
+numpy
+pyyaml
+dill
+azure-storage-blob
+scikit-learn==1.3.0
+matplotlib
+
+wpconnect @ git+https://github.com/wphospital/wpconnect
+sprucepy @ git+https://github.com/wphospital/sprucepy

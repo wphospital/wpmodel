@@ -45,7 +45,8 @@ def get_latest(
 
 def get_all_models(
 	model_df : str = 'out',
-	from_cloud: bool = True
+	from_cloud: bool = True,
+	detailed : bool = False
 ):
 	if from_cloud:
 		conn = helpers.container_conn()
@@ -58,7 +59,25 @@ def get_all_models(
 	else:
 		models = set([re.split('_\d+.pkl',x)[0] for x in os.listdir(model_df)\
 		 if re.search('_\d+.pkl',x)])
-	return models
+	
+	if not detailed:
+		return models
+
+	latest_models = []
+	for m in models:
+		try:
+			latest_models.append((m, 'Loadable', get_latest(m)))
+		except ValueError as err:
+			latest_models.append((m, 'Load Error', {}))
+
+	return pd.DataFrame({
+		m[0]: {
+			'status': m[1],
+			'last_created_time': m[2].__dict__.get('created_time'),
+			'last_fitted_time': m[2].__dict__.get('fitted_time')
+		}
+		for m in latest_models
+	})
 
 
 if __name__ == '__main__':

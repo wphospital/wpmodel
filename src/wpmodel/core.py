@@ -118,9 +118,12 @@ def predict(func):
     def predict(self, *args, **kwargs):
         result = func(self, *args, **kwargs)
 
-        result.index_column = self.get_index_column()
-        result.actual_column = self.actual_column
-        result.pred_column = self.pred_column
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+
+            result.index_column = self.get_index_column()
+            result.actual_column = self.actual_column
+            result.pred_column = self.pred_column
 
         return result
 
