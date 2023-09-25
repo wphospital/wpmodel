@@ -2,6 +2,8 @@ import os
 import re
 import dill
 
+import re
+
 from . import helpers  
 
 def get_latest(
@@ -50,7 +52,8 @@ class Placeholder:
 def get_all_models(
 	model_df : str = 'out',
 	from_cloud: bool = True,
-	detailed : bool = False
+	detailed : bool = False,
+	pattern : str = '.*'
 ):
 	if from_cloud:
 		conn = helpers.container_conn()
@@ -69,10 +72,11 @@ def get_all_models(
 
 	latest_models = []
 	for m in models:
-		try:
-			latest_models.append((m, 'Loadable', None, get_latest(m)))
-		except Exception as err:
-			latest_models.append((m, 'Load Error', str(err), Placeholder))
+		if re.search(pattern, m) is not None:
+			try:
+				latest_models.append((m, 'Loadable', None, get_latest(m)))
+			except Exception as err:
+				latest_models.append((m, 'Load Error', str(err), Placeholder))
 
 	return helpers.compile_model_info(latest_models)
 

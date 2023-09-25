@@ -206,7 +206,21 @@ class FakeFile:
         self.f.close()
 
 def compile_model_info(latest_models):
-    return pd.DataFrame({
+    """Takes results from the model cache and returns
+    a dataframe with details
+
+    Parameters
+    ----------
+    latest_models : list
+        A list of the model loads to compile
+
+    Returns
+    -------
+    pandas.DataFrame
+        the dataframe of model-level details
+    """
+
+    return pd.DataFrame.from_dict({
         m[0]: {
             'status': m[1],
             'error': m[2],
@@ -214,4 +228,4 @@ def compile_model_info(latest_models):
             'last_fitted_time': m[3].__dict__.get('fitted_time')
         }
         for m in latest_models
-    })
+    }, orient='index')
