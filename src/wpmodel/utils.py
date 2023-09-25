@@ -68,7 +68,7 @@ def get_all_models(
 		 if re.search('_\d+.pkl',x)])
 	
 	if not detailed:
-		return models
+		return set([m for m in models if re.search(pattern, m) is not None])
 
 	latest_models = []
 	for m in models:
