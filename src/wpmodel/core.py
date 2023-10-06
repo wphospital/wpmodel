@@ -690,7 +690,7 @@ class WPModel:
                     warnings.warn(strings.errors.DATA_NOT_CACHED)
             else:
                 check_params = sorted(
-                    pair for pair in q['query_params'].items()
+                    pair for pair in q.get('query_params', {}).items()
                 )
 
                 match = False
