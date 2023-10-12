@@ -1,9 +1,10 @@
 import os
 import re
+import gzip
+import io
+
 import dill
-
-import re
-
+ 
 from . import helpers  
 
 def get_latest(
@@ -21,18 +22,25 @@ def get_latest(
 
 	"""
 	if from_cloud:
+		compressed = True
 		conn = helpers.container_conn()
-		blob_list = conn.list_blobs()
+		blob_list = [i['name'] for i in conn.list_blobs()]
+		
 		 
-		blob_name = max([
-			i['name'] for i in blob_list 
-			if re.search(f'{model_name}_\d+.pkl', i['name'])
-			])
-			
+		files = [i for i in blob_list if re.search(f'{model_name}_\d+\\.gz', i )]
+		if not files:
+		   files = [i for i in blob_list if re.search(f'{model_name}_\d+\\.pkl', i)]
+		   compressed = False
+		blob_name = max(files)
+		
 		blob_bytes = conn.get_blob_client(blob=blob_name).download_blob().readall()
-		with helpers.FakeFile(blob_bytes) as ff:
-			return dill.load(ff.f)
-			
+		if compressed:
+			with gzip.open(io.BytesIO(blob_bytes),'rb') as f:
+			    model = dill.load(f)
+		else:
+			with helpers.FakeFile(blob_bytes) as ff:
+				model = dill.load(ff.f)
+		return model 	
 			
 	latest = max([
 		f

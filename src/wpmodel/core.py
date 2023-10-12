@@ -1,6 +1,7 @@
 # from abc import ABC, abstractmethod
 from wpconnect.wpapi import WPAPIRequest, get_precache_list
 from sprucepy import secrets
+import gzip
 
 import logging
 import time
@@ -487,7 +488,7 @@ class WPModel:
             defaults to true
         """
 
-        save_name = '{}_{}.pkl'.format(
+        save_name = '{}_{}.gz'.format(
             self.model_name,
             self.created_time.strftime('%Y%m%d%H%M%S')
         )
@@ -497,7 +498,11 @@ class WPModel:
 
         if to_cloud:
             conn = helpers.container_conn()
-            blob_client = conn.upload_blob(name=save_name, data=dill.dumps(self, recurse=True), overwrite=True)
+            blob_client = conn.upload_blob(
+                name=save_name, 
+                data=gzip.compress(dill.dumps(self, recurse=True)), 
+                overwrite=True
+                )
             
         else:
             with open(os.path.join(filepath, save_name), 'wb') as file: # TODO: Recursively make sure filepath exists
