@@ -45,7 +45,7 @@ def get_latest(
 	latest = max([
 		f
 		for f in os.listdir(model_df)
-		if re.search(f'{model_name}_\d+.pkl', f)
+		if re.search(f'{model_name}_\d+.(pkl|gz)', f)
 	])
 
 	with open(os.path.join(model_df, latest), 'rb') as file:
