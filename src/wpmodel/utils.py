@@ -29,8 +29,10 @@ def get_latest(
 		 
 		files = [i for i in blob_list if re.search(f'{model_name}_\d+\\.gz', i )]
 		if not files:
-		   files = [i for i in blob_list if re.search(f'{model_name}_\d+\\.pkl', i)]
-		   compressed = False
+			files = [i for i in blob_list if re.search(f'{model_name}_\d+\\.pkl', i)]
+			compressed = False
+		if not files:
+			files = [f'{model_name}.gz']
 		blob_name = max(files)
 		
 		blob_bytes = conn.get_blob_client(blob=blob_name).download_blob().readall()

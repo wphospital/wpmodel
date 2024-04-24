@@ -471,7 +471,8 @@ class WPModel:
         self,
         filepath : str = 'out',
         to_cloud : bool = False,
-        clear_data : bool = True
+        clear_data : bool = True,
+        use_date_suffix : bool = True
     ):
         """Dump the whole shebang as a dill to the filepath
 
@@ -488,10 +489,15 @@ class WPModel:
             defaults to true
         """
 
-        save_name = '{}_{}.gz'.format(
-            self.model_name,
-            self.created_time.strftime('%Y%m%d%H%M%S')
-        )
+        if use_date_suffix:
+            save_name = '{}_{}.gz'.format(
+                self.model_name,
+                self.created_time.strftime('%Y%m%d%H%M%S')
+            )
+        else:
+            save_name = '{}.gz'.format(
+                self.model_name
+            )
 
         if clear_data:
             self.clear_data()
@@ -506,7 +512,7 @@ class WPModel:
             
         else:
             with open(os.path.join(filepath, save_name), 'wb') as file: # TODO: Recursively make sure filepath exists
-                dill.dump(self, file, recurse=True)
+                gzip.compress(dill.dumps(self, recurse=True))
     
     def set_query_list(
         self,
