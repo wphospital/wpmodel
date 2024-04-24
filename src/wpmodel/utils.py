@@ -33,6 +33,7 @@ def get_latest(
 			compressed = False
 		if not files:
 			files = [f'{model_name}.gz']
+			compressed = True
 		blob_name = max(files)
 		
 		blob_bytes = conn.get_blob_client(blob=blob_name).download_blob().readall()
