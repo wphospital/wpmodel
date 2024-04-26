@@ -512,7 +512,7 @@ class WPModel:
             
         else:
             with open(os.path.join(filepath, save_name), 'wb') as file: # TODO: Recursively make sure filepath exists
-                gzip.compress(dill.dumps(self, recurse=True))
+                file.write(dill.dumps(self, recurse=True))
     
     def set_query_list(
         self,
